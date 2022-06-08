@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+</head>
+<body>
+<div>
+  <video id="video" style="display:none;"></video>
+  <canvas id="canvas"></canvas>
+  <div></div>
+  <button onclick="convertCanvasToImage()">拍照</button>
+  <!--  <canvas id="canvas" style="display: none"></canvas>-->
+  <script>
+  
+      // 预览图大小
+      const width = 480;
+      const height = 320;
+      const video = document.getElementById('video');
+ 
+      //访问摄像头
+      if (navigator.mediaDevices.getUserMedia || navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia) {
+          //调用用户媒体设备, 访问摄像头
+          getUserMedia({video: {width: width, height: height}}, success, error);
+      } else {
+          alert('不支持访问用户媒体');
+      }
+ 
+      //访问用户媒体设备的兼容方法
+      function getUserMedia(constraints, success, error) {
+          if (navigator.mediaDevices.getUserMedia) {
+              //最新的标准API
+              navigator.mediaDevices.getUserMedia(constraints).then(success).catch(error);
+          } else if (navigator.webkitGetUserMedia) {
+              //webkit核心浏览器
+              navigator.webkitGetUserMedia(constraints, success, error)
+          } else if (navigator.mozGetUserMedia) {
+              //firfox浏览器
+              navigator.mozGetUserMedia(constraints, success, error);
+          } else if (navigator.getUserMedia) {
+              //旧版API
+              navigator.getUserMedia(constraints, success, error);
+          }
+      }
+ 
+      //成功回调
+      function success(stream) {
+          console.log('成功');
+          //兼容webkit核心浏览器
+          // const CompatibleURL = window.URL || window.webkitURL;
+          //将视频流设置为video元素的源
+          // video.src = CompatibleURL.createObjectURL(stream);
+          video.srcObject = stream;
+          video.play();
+          setInterval(drawCanvasImage, 10)
+      }
+ 
+      //失败回调
+      function error(error) {
+          console.log('失败');
+          console.log("访问用户媒体设备失败", error);
+      }
+ 
+      function drawCanvasImage() {
+          const canvas = document.getElementById('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const context = canvas.getContext('2d');
+          context.drawImage(video, 0, 0, width, height, 0, 0, width, height);
+          
+      }
+	  
+	  // 将convert截取为base64字符串
+	  function convertCanvasToImage(){
+	  	 console.log('获取图片，数据格式为base64');
+		const canvas = document.getElementById('canvas');
+	  	 const imageData = canvas.toDataURL("image/png");
+		
+	  	 console.log(imageData)
+		 
+		 // 将base64下载到本地
+		  downloadFileByBase64(imageData);
+	  }
+	  
+	  
+	  
+	  function dataURLtoBlob(dataurl) {
+	      var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+	          bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+	      while (n--) {
+	          u8arr[n] = bstr.charCodeAt(n);
+	      }
+	      return new Blob([u8arr], { type: mime });
+	  }
+	   
+	   // 自动下载文件
+	  function downloadFile(url,name){
+	      var a = document.createElement("a")
+	      a.setAttribute("href",url)
+	      a.setAttribute("download",name)
+	      a.setAttribute("target","_blank")
+	      let clickEvent = document.createEvent("MouseEvents");
+	      clickEvent.initEvent("click", true, true);  
+	      a.dispatchEvent(clickEvent);
+	  }
+	   
+	  function downloadFileByBase64(base64,name){
+		  //将base64转为图片文件
+	      var myBlob = dataURLtoBlob(base64)
+		  //将文件放入下载方法
+	      var myUrl = URL.createObjectURL(myBlob)
+	      downloadFile(myUrl,getGuid())
+	  }
+	  
+	  function getGuid(){
+	      var len=32;      //32长度
+	      var radix=16;    //16进制
+	      var chars='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+	      var uuid=[],i;
+	      radix=radix || chars.length;
+	      if(len){
+	          for(i=0;i<len;i++){
+	              uuid[i]=chars[0 | Math.random()*radix];
+	          }
+	      }else{
+	          var r;
+	          uuid[8]=uuid[13]=uuid[18]=uuid[23]='-';
+	          uuid[14]='4';
+	          for(i=0;i<36;i++){
+	              if(!uuid[i]){
+	                  r=0 | Math.random()*16;
+	                  uuid[i]=chars[(i==19)?(r&0x3)|0x8:r];
+	              }
+	          }
+	      }
+	      return uuid.join('');
+	  }
+  </script>
+ 
+</div>
+</body>
+</html>
