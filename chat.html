@@ -1,142 +1,310 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Title</title>
-</head>
-<body>
-<div>
-  <video id="video" style="display:none;"></video>
-  <canvas id="canvas"></canvas>
-  <div></div>
-  <button onclick="convertCanvasToImage()">拍照</button>
-  <!--  <canvas id="canvas" style="display: none"></canvas>-->
-  <script>
-  
-      // 预览图大小
-      const width = 480;
-      const height = 320;
-      const video = document.getElementById('video');
- 
-      //访问摄像头
-      if (navigator.mediaDevices.getUserMedia || navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia) {
-          //调用用户媒体设备, 访问摄像头
-          getUserMedia({video: {width: width, height: height}}, success, error);
-      } else {
-          alert('不支持访问用户媒体');
-      }
- 
-      //访问用户媒体设备的兼容方法
-      function getUserMedia(constraints, success, error) {
-          if (navigator.mediaDevices.getUserMedia) {
-              //最新的标准API
-              navigator.mediaDevices.getUserMedia(constraints).then(success).catch(error);
-          } else if (navigator.webkitGetUserMedia) {
-              //webkit核心浏览器
-              navigator.webkitGetUserMedia(constraints, success, error)
-          } else if (navigator.mozGetUserMedia) {
-              //firfox浏览器
-              navigator.mozGetUserMedia(constraints, success, error);
-          } else if (navigator.getUserMedia) {
-              //旧版API
-              navigator.getUserMedia(constraints, success, error);
-          }
-      }
- 
-      //成功回调
-      function success(stream) {
-          console.log('成功');
-          //兼容webkit核心浏览器
-          // const CompatibleURL = window.URL || window.webkitURL;
-          //将视频流设置为video元素的源
-          // video.src = CompatibleURL.createObjectURL(stream);
-          video.srcObject = stream;
-          video.play();
-          setInterval(drawCanvasImage, 10)
-      }
- 
-      //失败回调
-      function error(error) {
-          console.log('失败');
-          console.log("访问用户媒体设备失败", error);
-      }
- 
-      function drawCanvasImage() {
-          const canvas = document.getElementById('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const context = canvas.getContext('2d');
-          context.drawImage(video, 0, 0, width, height, 0, 0, width, height);
-          
-      }
-	  
-	  // 将convert截取为base64字符串
-	  function convertCanvasToImage(){
-	  	 console.log('获取图片，数据格式为base64');
-		const canvas = document.getElementById('canvas');
-	  	 const imageData = canvas.toDataURL("image/png");
-		
-	  	 console.log(imageData)
-		 
-		 // 将base64下载到本地
-		  downloadFileByBase64(imageData);
-	  }
-	  
-	  
-	  
-	  function dataURLtoBlob(dataurl) {
-	      var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
-	          bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
-	      while (n--) {
-	          u8arr[n] = bstr.charCodeAt(n);
-	      }
-	      return new Blob([u8arr], { type: mime });
-	  }
-	   
-	   // 自动下载文件
-	  function downloadFile(url,name){
-	      var a = document.createElement("a")
-	      a.setAttribute("href",url)
-	      a.setAttribute("download",name)
-	      a.setAttribute("target","_blank")
-	      let clickEvent = document.createEvent("MouseEvents");
-	      clickEvent.initEvent("click", true, true);  
-	      a.dispatchEvent(clickEvent);
-	  }
-	   
-	  function downloadFileByBase64(base64,name){
-		  //将base64转为图片文件
-	      var myBlob = dataURLtoBlob(base64)
-		  //将文件放入下载方法
-	      var myUrl = URL.createObjectURL(myBlob)
-	      downloadFile(myUrl,getGuid())
-	  }
-	  
-	  function getGuid(){
-	      var len=32;      //32长度
-	      var radix=16;    //16进制
-	      var chars='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-	      var uuid=[],i;
-	      radix=radix || chars.length;
-	      if(len){
-	          for(i=0;i<len;i++){
-	              uuid[i]=chars[0 | Math.random()*radix];
-	          }
-	      }else{
-	          var r;
-	          uuid[8]=uuid[13]=uuid[18]=uuid[23]='-';
-	          uuid[14]='4';
-	          for(i=0;i<36;i++){
-	              if(!uuid[i]){
-	                  r=0 | Math.random()*16;
-	                  uuid[i]=chars[(i==19)?(r&0x3)|0x8:r];
-	              }
-	          }
-	      }
-	      return uuid.join('');
-	  }
-  </script>
- 
-</div>
-</body>
+	<head>
+		<meta charset="UTF-8">
+		<title>Title</title>
+
+		<style>
+			video {
+				width: 640px;
+				height: 480px;
+			}
+
+			.imageimg {
+				width: 320;
+				height: 240px;
+			}
+		</style>
+
+		<!-- <link type="text/css" href="https://www.layuicdn.com/layui/css/layui.css" /> -->
+	</head>
+	<body>
+		<div>
+			<img id="flatimg" style="display:none;" />
+			<div>
+				<video id="video" style=""></video>
+			</div>
+
+			<canvas id="canvas" style="display:none;"></canvas>
+			<div id="MessageDiv"></div>
+			<button onclick="convertCanvasToImage()">拍照</button>
+			<button onclick="upimage()">上传</button>
+			<div style="margin-top:50px;"></div>
+			<div id="imagediv">
+				<!-- <div class="imageline">
+					<img class="imageimg" src="../pic/confirm-btn.png">
+					<button class="imagedletebtn" data-rowid="1">删除</button>
+				</div> -->
+			</div>
+
+			<div id="DYJ-ERR" style="display:none;">
+
+			</div>
+
+			<div class="container">
+				<div class="box" style="top: 0px;left: 0px;"></div>
+			</div>
+		</div>
+		<!--  <canvas id="canvas" style="display: none"></canvas>-->
+		<script src="https://cdn.bootcdn.net/ajax/libs/jquery/1.6.4/jquery.js"></script>
+		<!-- <script src="https://www.layuicdn.com/layui/layui.js"></script> -->
+		<script>
+		  
+			var imagearr = [];
+			// 预览图大小
+			const width = 1280;
+			const height = 960;
+			const video = document.getElementById('video');
+
+
+
+
+
+			//访问摄像头
+			if (navigator.mediaDevices.getUserMedia || navigator.getUserMedia || navigator.webkitGetUserMedia || navigator
+				.mozGetUserMedia) {
+				//调用用户媒体设备, 访问摄像头
+				getUserMedia({
+					video: {
+						width: width,
+						height: height
+					}
+				}, success, error);
+			} else {
+				alert('不支持访问用户媒体');
+			}
+
+			//访问用户媒体设备的兼容方法
+			function getUserMedia(constraints, success, error) {
+				if (navigator.webkitGetUserMedia) {
+					//webkit核心浏览器
+					navigator.webkitGetUserMedia(constraints, success, error)
+					console.log("webkit核心浏览器");
+				} else if (navigator.mediaDevices.getUserMedia) {
+					//最新的标准API
+					navigator.mediaDevices.getUserMedia(constraints).then(success).catch(error);
+					console.log("最新的标准API");
+
+				} else if (navigator.mozGetUserMedia) {
+					//firfox浏览器
+					navigator.mozGetUserMedia(constraints, success, error);
+				} else if (navigator.getUserMedia) {
+					//旧版API
+					navigator.getUserMedia(constraints, success, error);
+				}
+			}
+
+			//成功回调
+			function success(stream) {
+				console.log('成功');
+				//兼容webkit核心浏览器
+				const CompatibleURL = window.URL || window.webkitURL;
+				//将视频流设置为video元素的源
+				//video.src = CompatibleURL.createObjectURL(stream);
+				video.srcObject = stream;
+				video.play();
+
+
+
+			}
+
+			video.addEventListener("canplay", () => {
+				console.log("开启绑定");
+				drawCanvasImage();
+			});
+
+			//失败回调
+			function error(error) {
+				console.log('失败');
+				console.log("访问用户媒体设备失败", error);
+			}
+
+			// 将voide绘制到canvas上
+			function drawCanvasImage() {
+
+				try {
+					const canvas = document.getElementById('canvas');
+					let clientwidth = width;
+					let clientheight = height;
+					canvas.width = clientwidth;
+					canvas.height = clientheight;
+					const context = canvas.getContext('2d');
+
+					context.drawImage(video, 0, 0, clientwidth, clientheight, 0, 0, clientwidth, clientheight);
+					requestAnimationFrame(drawCanvasImage);
+
+					return false;
+				} catch (err) {
+					console.log(err);
+					requestAnimationFrame(drawCanvasImage);
+				}
+			}
+
+			//点击拍照  将convert截取为base64字符串
+			function convertCanvasToImage() {
+				console.log('获取图片，数据格式为base64');
+				const canvas = document.getElementById('canvas');
+
+				// const context = canvas.getContext('2d');
+				// context.drawImage(video, 0, 0, width, height, 0, 0, width, height);
+				const imageData = canvas.toDataURL("image/png");
+				console.log(imageData);
+				imagearr.push(imageData);
+
+				let divstr = '<div class="imageline"><img class="imageimg" src="' + imageData +
+					'"><button class="imagedletebtn">删除</button></div>'
+				$("#imagediv").append(divstr);
+
+				$("#MessageDiv").html("共{" + jQuery('.imageimg').length + "}图片")
+
+				// 将base64下载到本地
+				// downloadFileByBase64(imageData);
+			}
+
+			// 上传图片
+			function upimage() {
+				//console.log(imagearr.length);
+				imagearr = [];
+				jQuery('.imageimg').each(function(key, value) {
+
+					imagearr.push($(this).attr("src"));
+				});
+				console.log(imagearr);
+				if (imagearr.length < 1) {
+					alert("先拍照再上传");
+					return;
+				}
+				for (let i = 0; i < imagearr.length; i++) {
+					let upimage = [];
+					upimage.push(imagearr[i]);
+					$.ajax({
+						type: 'post',
+						url: 'url', //api接口地址
+						data: JSON.stringify({
+							'pid': getUrlParam('pid'),
+							'uid': getUrlParam('uid'),
+							'rktype': getUrlParam('rktype'),
+							'imagebase64': upimage
+						}),
+						async: false,
+						success: function(data) {
+							console.log('%c' + data, 'red');
+							if (data == "ok") {
+
+							} else {
+								alert(data);
+								return false;
+							}
+						},
+						error: function(xhr, errorText, errorType) {
+							
+							//信任证书
+							var er = "<a href='url' target='_blank' id='DYJ-ZSs'>接口</a>   "
+							 $("#DYJ-ERR").html(er);
+							 document.getElementById("DYJ-ZSs").click();
+							// console.log(xhr);
+							// return false;
+						}
+
+					})
+				}
+				$("#imagediv").children().remove();
+				$("#MessageDiv").html("");
+				alert("成功");
+				imagearr = [];
+			}
+
+
+			function dataURLtoBlob(dataurl) {
+				var arr = dataurl.split(','),
+					mime = arr[0].match(/:(.*?);/)[1],
+					bstr = atob(arr[1]),
+					n = bstr.length,
+					u8arr = new Uint8Array(n);
+				while (n--) {
+					u8arr[n] = bstr.charCodeAt(n);
+				}
+				return new Blob([u8arr], {
+					type: mime
+				});
+			}
+
+			//点击删除
+			$(".imagedletebtn").live("click", function() {
+				// alert($(this).attr("data-rowid"));
+				$(this).parent().remove();
+			})
+
+			$(".imageimg ").live("mouseenter", function() {
+				$(this).css("width", " 960px");
+				$(this).css("height", " 720px");
+			})
+
+			$(".imageimg ").live("mouseleave", function() {
+				$(this).css("width", " 320px");
+				$(this).css("height", " 240px");
+			})
+
+
+			// 自动下载文件
+			function downloadFile(url, name) {
+				var a = document.createElement("a")
+				a.setAttribute("href", url)
+				a.setAttribute("download", name)
+				a.setAttribute("target", "_blank")
+				let clickEvent = document.createEvent("MouseEvents");
+				clickEvent.initEvent("click", true, true);
+				a.dispatchEvent(clickEvent);
+			}
+
+			function downloadFileByBase64(base64, name) {
+				//将base64转为图片文件
+				var myBlob = dataURLtoBlob(base64)
+				//将文件放入下载方法
+				var myUrl = URL.createObjectURL(myBlob)
+				downloadFile(myUrl, getGuid())
+			}
+
+			function getGuid() {
+				var len = 32; //32长度
+				var radix = 16; //16进制
+				var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+				var uuid = [],
+					i;
+				radix = radix || chars.length;
+				if (len) {
+					for (i = 0; i < len; i++) {
+						uuid[i] = chars[0 | Math.random() * radix];
+					}
+				} else {
+					var r;
+					uuid[8] = uuid[13] = uuid[18] = uuid[23] = '-';
+					uuid[14] = '4';
+					for (i = 0; i < 36; i++) {
+						if (!uuid[i]) {
+							r = 0 | Math.random() * 16;
+							uuid[i] = chars[(i == 19) ? (r & 0x3) | 0x8 : r];
+						}
+					}
+				}
+				return uuid.join('');
+			}
+
+			/**
+			 * 获取url参数
+			 * @param {any} name 参数键
+			 */
+			function getUrlParam(name) {
+				//构造一个含有目标参数的正则表达式对象
+				var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
+				//匹配目标参数
+				var r = window.location.search.substr(1).match(reg);
+				//返回参数值
+				if (r != null) return unescape(r[2]);
+				return null;
+			}
+		</script>
+
+
+	</body>
 </html>
